@@ -1,0 +1,20 @@
+# Compiled binaries & objects
+doc_similarity
+run_tests
+*.o
+*.dSYM/
+.DS_Store
+
+# Temporary build directories
+build/
+bin/
+
+# Python cache & virtual environments
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Large generated data files (except sample corpus)
+data/benchmarks/
+data/synthetic_*.txt
