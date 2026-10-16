@@ -31,7 +31,7 @@ void print_usage(const char* prog_name) {
 int main(int argc, char* argv[]) {
     std::string input_path = "";
     std::string mode = "both";
-    int num_threads = 0;
+    int num_threads = 8;
     double threshold = 0.10;
     int top_k = 10;
     bool benchmark_mode = false;
@@ -135,12 +135,15 @@ int main(int argc, char* argv[]) {
     total_timer.stop();
 
     // Verify equivalence if requested or running both
+    bool verification_failed = false;
     if (verify_mode || (mode == "both" && !benchmark_mode)) {
         bool match = (seq_matches.size() == par_matches.size());
         if (match) {
             for (size_t i = 0; i < seq_matches.size(); ++i) {
                 if (seq_matches[i].doc_i != par_matches[i].doc_i ||
                     seq_matches[i].doc_j != par_matches[i].doc_j ||
+                    seq_matches[i].doc_i_id != par_matches[i].doc_i_id ||
+                    seq_matches[i].doc_j_id != par_matches[i].doc_j_id ||
                     std::abs(seq_matches[i].similarity - par_matches[i].similarity) > 1e-6) {
                     match = false;
                     break;
@@ -159,7 +162,10 @@ int main(int argc, char* argv[]) {
                 std::cout << "       Seq count: " << seq_matches.size() << ", Par count: " << par_matches.size() << "\n";
             }
         }
+        verification_failed = !match;
     }
+
+    if (verification_failed) return 1;
 
     if (benchmark_mode) {
         // Output CSV row: docs_count,threads,seq_compute_ms,par_compute_ms,seq_total_ms,par_total_ms,speedup,efficiency

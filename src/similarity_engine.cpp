@@ -1,10 +1,25 @@
 #include "../include/similarity_engine.hpp"
 #include "../include/timer.hpp"
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+
+namespace {
+bool similarity_pair_precedes(const SimilarityPair& a, const SimilarityPair& b) {
+    const auto a_score = std::llround(a.similarity * 1e9);
+    const auto b_score = std::llround(b.similarity * 1e9);
+    if (a_score != b_score) {
+        return a_score > b_score;
+    }
+    if (a.doc_i != b.doc_i) {
+        return a.doc_i < b.doc_i;
+    }
+    return a.doc_j < b.doc_j;
+}
+}
 
 DocumentSimilarityEngine::DocumentSimilarityEngine(double similarity_threshold)
     : threshold(similarity_threshold) {}
@@ -41,14 +56,8 @@ std::vector<SimilarityPair> DocumentSimilarityEngine::compute_pairwise_sequentia
     stats.total_pairs_computed = total_pairs;
     stats.threshold_matches = matches.size();
 
-    // Sort matches deterministically: by similarity desc, then doc_i, then doc_j
-    std::sort(matches.begin(), matches.end(), [](const SimilarityPair& a, const SimilarityPair& b) {
-        if (std::abs(a.similarity - b.similarity) > 1e-9) {
-            return a.similarity > b.similarity;
-        }
-        if (a.doc_i != b.doc_i) return a.doc_i < b.doc_i;
-        return a.doc_j < b.doc_j;
-    });
+    // Sort matches deterministically: by similarity desc, then doc_i, then doc_j.
+    std::sort(matches.begin(), matches.end(), similarity_pair_precedes);
 
     return matches;
 }
@@ -110,14 +119,8 @@ std::vector<SimilarityPair> DocumentSimilarityEngine::compute_pairwise_parallel(
     stats.total_pairs_computed = total_pairs;
     stats.threshold_matches = matches.size();
 
-    // Sort matches deterministically for identical comparison against sequential
-    std::sort(matches.begin(), matches.end(), [](const SimilarityPair& a, const SimilarityPair& b) {
-        if (std::abs(a.similarity - b.similarity) > 1e-9) {
-            return a.similarity > b.similarity;
-        }
-        if (a.doc_i != b.doc_i) return a.doc_i < b.doc_i;
-        return a.doc_j < b.doc_j;
-    });
+    // Sort matches deterministically for identical comparison against sequential.
+    std::sort(matches.begin(), matches.end(), similarity_pair_precedes);
 
     return matches;
 }

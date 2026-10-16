@@ -112,6 +112,63 @@ void test_empty_and_short_docs() {
     std::cout << "PASSED\n";
 }
 
+void test_requested_document_combinations() {
+    const auto verify_combination = [](const std::string& test_name,
+                                       const std::string& doc_1_text,
+                                       const std::string& doc_2_text,
+                                       double expected_similarity) {
+        std::vector<Document> docs = {
+            {"doc_1", doc_1_text, {}},
+            {"doc_2", doc_2_text, {}}
+        };
+
+        TextPreprocessor pre;
+        auto docs_seq = docs;
+        pre.preprocess_documents_sequential(docs_seq);
+        TFIDFVectorparser tfidf_seq;
+        tfidf_seq.build_vocabulary_sequential(docs_seq);
+        std::vector<SparseVector> vectors_seq;
+        tfidf_seq.compute_tfidf_sequential(docs_seq, vectors_seq);
+
+        auto docs_par = docs;
+        pre.preprocess_documents_parallel(docs_par, 4);
+        TFIDFVectorparser tfidf_par;
+        tfidf_par.build_vocabulary_parallel(docs_par, 4);
+        std::vector<SparseVector> vectors_par;
+        tfidf_par.compute_tfidf_parallel(docs_par, vectors_par, 4);
+
+        const double sequential_similarity =
+            compute_sparse_dot_product(vectors_seq[0], vectors_seq[1]);
+        const double parallel_similarity =
+            compute_sparse_dot_product(vectors_par[0], vectors_par[1]);
+        assert(std::abs(sequential_similarity - expected_similarity) < 1e-6);
+        assert(std::abs(parallel_similarity - expected_similarity) < 1e-6);
+
+        DocumentSimilarityEngine engine(0.0);
+        ExecutionStats seq_stats{};
+        ExecutionStats par_stats{};
+        const auto seq_matches =
+            engine.compute_pairwise_sequential(docs_seq, vectors_seq, seq_stats);
+        const auto par_matches =
+            engine.compute_pairwise_parallel(docs_par, vectors_par, par_stats, 4);
+        assert(seq_matches.size() == 1);
+        assert(par_matches.size() == 1);
+        assert(seq_matches[0].doc_i_id == "doc_1");
+        assert(seq_matches[0].doc_j_id == "doc_2");
+        assert(par_matches[0].doc_i_id == "doc_1");
+        assert(par_matches[0].doc_j_id == "doc_2");
+        std::cout << test_name << " PASSED (Cosine Sim = "
+                  << sequential_similarity << ")\n";
+    };
+
+    std::cout << "[Test 5] Requested Document Combinations...\n";
+    verify_combination("  Case 1 (shivani khushi / nehal mugdha):",
+                       "shivani khushi", "nehal mugdha", 0.0);
+    verify_combination("  Case 2 (shivani khushi khushi / shivani khushi):",
+                       "shivani khushi khushi", "shivani khushi",
+                       3.0 / std::sqrt(10.0));
+}
+
 int main() {
     std::cout << "=======================================================\n";
     std::cout << "         RUNNING CORRECTNESS SUITE                     \n";
@@ -120,6 +177,7 @@ int main() {
     test_orthogonal_documents();
     test_seq_vs_par_equivalence();
     test_empty_and_short_docs();
+    test_requested_document_combinations();
     std::cout << "=======================================================\n";
     std::cout << "ALL CORRECTNESS TESTS PASSED SUCCESSFULLY!\n";
     std::cout << "=======================================================\n";

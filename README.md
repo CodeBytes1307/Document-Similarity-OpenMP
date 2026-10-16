@@ -169,6 +169,16 @@ python3 scripts/generate_dataset.py --num_docs 200 --doc_length 300 --output dat
 ./doc_similarity --input data/sample_corpus.txt --mode both --threshold 0.10 --threads 4 --top 10
 ```
 
+### Requested Document Comparison Cases
+The two reproducible examples below report their single pair at a threshold of `0.0`:
+
+```bash
+./doc_similarity --input data/requested_case_1.txt --mode both --threshold 0.0 --threads 4 --top 1
+./doc_similarity --input data/requested_case_2.txt --mode both --threshold 0.0 --threads 4 --top 1
+```
+
+The first pair has no shared tokens and a cosine similarity of `0.0`. The second pair has cosine similarity `3 / sqrt(10)`, approximately `0.9487`.
+
 ---
 
 ## 9. Synthetic Dataset Generation
