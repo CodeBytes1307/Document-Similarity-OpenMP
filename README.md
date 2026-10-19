@@ -251,3 +251,7 @@ For viva preparation, algorithm trade-offs, and full documentation, refer to:
 - [LLM Usage Log](docs/LLM_USAGE_LOG.md)
 - [Team Contribution Template](docs/TEAM_CONTRIBUTION.md)
 - [Viva Q&A Guide](docs/VIVA_PREPARATION.md)
+
+Project by-
+Khushi Birla
+Nehal Katlana
